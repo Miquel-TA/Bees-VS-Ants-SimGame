@@ -2,18 +2,22 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Bees vs Ants: Emoji Tactics</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #05070a; font-family: 'Segoe UI', Tahoma, sans-serif; cursor: grab; }
         body:active { cursor: grabbing; }
-        canvas { display: block; }
+        canvas { display: block; touch-action: none; }
+        
         #ui-panel {
             position: absolute; top: 15px; left: 15px; background: rgba(15, 18, 25, 0.9); border: 1px solid #3a4556; 
             padding: 15px; border-radius: 12px; color: #e2e8f0; width: 300px; box-shadow: 0 10px 25px rgba(0,0,0,0.8);
             z-index: 10; cursor: default; backdrop-filter: blur(8px);
-            max-height: 90vh; overflow-y: auto;
         }
+        #ui-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin-bottom: 5px; padding-bottom: 5px; border-bottom: 1px solid #334155; }
+        #ui-header h3 { margin: 0; font-size: 15px; color: #fff; }
+        #ui-body { max-height: 80vh; overflow-y: auto; padding-top: 10px; }
+        
         .control-group { margin-bottom: 12px; }
         .control-group label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; color: #94a3b8; font-weight: 600; align-items: center;}
         input[type="range"] { width: 100%; cursor: pointer; accent-color: #3b82f6; }
@@ -29,50 +33,69 @@
         .stat-team { width: 48%; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; }
         .instructions { font-size: 11px; color: #64748b; margin-top: 15px; text-align: center; }
         
-        #ui-panel::-webkit-scrollbar { width: 6px; }
-        #ui-panel::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
-        #ui-panel::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        #ui-body::-webkit-scrollbar { width: 6px; }
+        #ui-body::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
+        #ui-body::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+
+        #victory-toast {
+            display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(15, 18, 25, 0.95); border: 2px solid #3b82f6; padding: 30px 50px; 
+            border-radius: 16px; color: white; text-align: center; z-index: 100; 
+            box-shadow: 0 10px 50px rgba(0,0,0,0.9); backdrop-filter: blur(10px);
+        }
+        #victory-toast h2 { margin: 0 0 20px 0; font-size: 28px; }
     </style>
 </head>
 <body>
 
 <div id="ui-panel">
-    <div class="control-group">
-        <label><span>Simulation Speed</span> <span id="speed-val">1.0x</span></label>
-        <input type="range" id="speed" min="0" max="10" step="0.5" value="1">
+    <div id="ui-header">
+        <h3>⚙️ Options & Stats</h3>
+        <span id="ui-toggle">➖</span>
     </div>
-    <div class="control-group">
-        <label><span>Apple Tree Density</span> <span id="res-val">100</span></label>
-        <input type="range" id="resources" min="40" max="300" step="10" value="100">
-    </div>
-    <div class="control-group">
-        <label>Fog of War Filter</label>
-        <select id="fow-view">
-            <option value="both">Both Factions</option>
-            <option value="0">Ants View Only</option>
-            <option value="1">Bees View Only</option>
-        </select>
-    </div>
-    <div class="control-group">
-        <label>Show Vision Range</label>
-        <div class="checkbox-row">
-            <label><input type="checkbox" id="vis-0"> Workers</label>
-            <label><input type="checkbox" id="vis-1"> Soldiers</label>
-            <label><input type="checkbox" id="vis-2"> Queens</label>
+    <div id="ui-body">
+        <div class="control-group">
+            <label><span>Simulation Speed</span> <span id="speed-val">1.0x</span></label>
+            <input type="range" id="speed" min="0" max="10" step="0.5" value="1">
         </div>
-    </div>
-    <div class="control-group">
-        <label>Show Pathing Goals</label>
-        <div class="checkbox-row">
-            <label><input type="checkbox" id="path-0"> Workers</label>
-            <label><input type="checkbox" id="path-1"> Soldiers</label>
-            <label><input type="checkbox" id="path-2"> Queens</label>
+        <div class="control-group">
+            <label><span>Apple Tree Density</span> <span id="res-val">100</span></label>
+            <input type="range" id="resources" min="20" max="200" step="10" value="100">
         </div>
-    </div>
+        <div class="control-group">
+            <label>Fog of War Filter</label>
+            <select id="fow-view">
+                <option value="both">Both Factions</option>
+                <option value="0">Ants View Only</option>
+                <option value="1">Bees View Only</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>Show Vision Range</label>
+            <div class="checkbox-row">
+                <label><input type="checkbox" id="vis-0"> Workers</label>
+                <label><input type="checkbox" id="vis-1"> Soldiers</label>
+                <label><input type="checkbox" id="vis-2"> Queens</label>
+            </div>
+        </div>
+        <div class="control-group">
+            <label>Show Pathing Goals</label>
+            <div class="checkbox-row">
+                <label><input type="checkbox" id="path-0"> Workers</label>
+                <label><input type="checkbox" id="path-1"> Soldiers</label>
+                <label><input type="checkbox" id="path-2"> Queens</label>
+            </div>
+        </div>
 
-    <button id="restart">Generate New World</button>
-    <div class="stats" id="stats"></div>
-    <div class="instructions">Drag to pan map • Scroll to zoom</div>
+        <button id="restart">Generate New World</button>
+        <div class="stats" id="stats"></div>
+        <div class="instructions">Drag to pan map • Scroll/Pinch to zoom</div>
+    </div>
+</div>
+
+<div id="victory-toast">
+    <h2 id="victory-msg">👑 Ants Win!</h2>
+    <button onclick="document.getElementById('victory-toast').style.display='none'">Dismiss</button>
 </div>
 
 <canvas id="gameCanvas"></canvas>
@@ -91,12 +114,30 @@ const mapCtx = mapCanvas.getContext('2d', { alpha: false });
 const fogCanvas = document.createElement('canvas');
 const fogCtx = fogCanvas.getContext('2d');
 
+const lightMask = document.createElement('canvas');
+lightMask.width = 600; lightMask.height = 600;
+const lightCtx = lightMask.getContext('2d');
+let lg = lightCtx.createRadialGradient(300, 300, 0, 300, 300, 300);
+lg.addColorStop(0, 'rgba(0,0,0,1)'); lg.addColorStop(1, 'rgba(0,0,0,0)');
+lightCtx.fillStyle = lg; lightCtx.fillRect(0,0,600,600);
+
 let lastTime = 0, speedMult = 1, targetResourceCount = 100;
 let units = [], resources = [], bases = [], particles = [], grid = [];
 let clouds = [], leaves = [], fishes = [], birds = [];
+let spatialGrid = {}; 
+let gameOver = false;
 
 let cam = { x: WORLD_W/2, y: WORLD_H/2, z: 0.8 };
 let isDragging = false, lastMouse = {x:0, y:0};
+let initialPinchDist = null, initialCamZ = 1;
+
+document.getElementById('ui-header').addEventListener('click', () => {
+    let body = document.getElementById('ui-body');
+    if(body.style.display === 'none') { body.style.display = 'block'; document.getElementById('ui-toggle').innerText = '➖'; } 
+    else { body.style.display = 'none'; document.getElementById('ui-toggle').innerText = '➕'; }
+});
+document.getElementById('ui-panel').addEventListener('mousedown', e => e.stopPropagation());
+document.getElementById('ui-panel').addEventListener('touchstart', e => e.stopPropagation());
 
 canvas.addEventListener('mousedown', e => { if (e.target === canvas) { isDragging = true; lastMouse = {x: e.clientX, y: e.clientY}; }});
 window.addEventListener('mousemove', e => { 
@@ -105,28 +146,47 @@ window.addEventListener('mousemove', e => {
 window.addEventListener('mouseup', () => isDragging = false);
 window.addEventListener('mouseleave', () => isDragging = false);
 canvas.addEventListener('wheel', e => { 
-    e.preventDefault();
-    let zoomAmount = e.deltaY > 0 ? 0.9 : 1.1; 
+    e.preventDefault(); let zoomAmount = e.deltaY > 0 ? 0.9 : 1.1; 
     cam.z = Math.max(0.3, Math.min(cam.z * zoomAmount, 2.5)); 
 }, { passive: false });
-document.getElementById('ui-panel').addEventListener('mousedown', e => e.stopPropagation());
+
+canvas.addEventListener('touchstart', e => {
+    if (e.target === canvas) {
+        e.preventDefault();
+        if(e.touches.length === 1) { isDragging = true; lastMouse = {x: e.touches[0].clientX, y: e.touches[0].clientY}; } 
+        else if(e.touches.length === 2) { initialPinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); initialCamZ = cam.z; }
+    }
+}, {passive: false});
+window.addEventListener('touchmove', e => {
+    if (isDragging && e.touches.length === 1) {
+        e.preventDefault();
+        cam.x -= (e.touches[0].clientX - lastMouse.x)/cam.z; cam.y -= (e.touches[0].clientY - lastMouse.y)/cam.z;
+        lastMouse = {x: e.touches[0].clientX, y: e.touches[0].clientY};
+    } else if (e.touches.length === 2) {
+        e.preventDefault();
+        let currentDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        cam.z = Math.max(0.3, Math.min(initialCamZ * (currentDist / initialPinchDist), 2.5));
+    }
+}, {passive: false});
+window.addEventListener('touchend', e => { if(e.touches.length < 2) initialPinchDist = null; if(e.touches.length === 0) isDragging = false; });
 
 const HEX_SIZE = 14;
 const HEX_W = Math.sqrt(3) * HEX_SIZE;
 const HEX_H = 2 * HEX_SIZE;
 let cols = Math.ceil(WORLD_W / HEX_W) + 2;
 let rows = Math.ceil(WORLD_H / (HEX_H * 0.75)) + 2;
+const CELL_SIZE = 250; 
 
 const C = {
     TEAMS: { ANT: 0, BEE: 1 },
     TYPES: { WORKER: 0, SOLDIER: 1, QUEEN: 2 },
     STATE: { WANDER: 0, GATHER: 1, RETURN_RES: 2, ENGAGE: 3, ATTACK: 4, RETURN_BASE: 5, LARVA: 6, FLEE: 7, MOVE_TO_SETTLE: 8, SETTLING: 9 },
-    ATTACK_RANGE: 18, MAX_ENERGY: 180, MATURE_TIME: 4, QUEEN_MATURE_TIME: 20,
+    ATTACK_RANGE: 18, MAX_ENERGY: 150, MATURE_TIME: 4, QUEEN_MATURE_TIME: 20,
     STATS: {
-        ANT_WORKER:  { hp: 35, dmg: 4, speed: 45, cost: 5, radius: 4, color: '#b5531b', vision: 140 },
+        ANT_WORKER:  { hp: 35, dmg: 4, speed: 34, cost: 5, radius: 4, color: '#b5531b', vision: 140 },
         ANT_SOLDIER: { hp: 120, dmg: 18, speed: 55, cost: 10, radius: 6, color: '#f02424', vision: 240 },
         ANT_QUEEN:   { hp: 350, dmg: 10, speed: 30, cost: 1000, radius: 9, color: '#8a2020', vision: 140 },
-        BEE_WORKER:  { hp: 35, dmg: 4, speed: 45, cost: 5, radius: 4, color: '#f5d142', vision: 140 },
+        BEE_WORKER:  { hp: 35, dmg: 4, speed: 34, cost: 5, radius: 4, color: '#f5d142', vision: 140 },
         BEE_SOLDIER: { hp: 120, dmg: 18, speed: 55, cost: 10, radius: 6, color: '#ff8c00', vision: 240 },
         BEE_QUEEN:   { hp: 350, dmg: 10, speed: 30, cost: 1000, radius: 9, color: '#ffffff', vision: 140 } 
     }
@@ -150,96 +210,69 @@ function getNearestBase(pos, team) {
     return myBases.reduce((min, b) => Vector.dist(pos, b.pos) < Vector.dist(pos, min.pos) ? b : min);
 }
 
-class Bird {
-    constructor() {
-        this.x = Math.random() * WORLD_W; this.y = Math.random() * WORLD_H;
-        this.vx = (Math.random() < 0.5 ? 1 : -1) * (150 + Math.random()*100);
-        this.vy = (Math.random() - 0.5) * 60;
-        this.phase = Math.random() * Math.PI * 2;
-    }
-    update(dt) {
-        this.x += this.vx * dt; this.y += this.vy * dt; this.phase += dt * 10;
-        if (this.x < -200 || this.x > WORLD_W + 200 || this.y < -200 || this.y > WORLD_H + 200) {
-            this.x = this.vx > 0 ? -100 : WORLD_W + 100;
-            this.y = Math.random() * WORLD_H;
+function getUnitsNear(pos, radius) {
+    let res = [];
+    let cx = Math.floor(pos.x / CELL_SIZE);
+    let cy = Math.floor(pos.y / CELL_SIZE);
+    let range = Math.ceil(radius / CELL_SIZE);
+    for(let x = cx - range; x <= cx + range; x++) {
+        for(let y = cy - range; y <= cy + range; y++) {
+            let key = x + ',' + y;
+            if(spatialGrid[key]) res.push(...spatialGrid[key]);
         }
     }
-    draw(ctx) {
-        ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 2; ctx.beginPath();
-        let wingY = Math.sin(this.phase) * 6;
-        ctx.moveTo(this.x - 8, this.y - wingY); ctx.lineTo(this.x, this.y); ctx.lineTo(this.x + 8, this.y - wingY);
-        ctx.stroke();
+    return res;
+}
+
+class Bird {
+    constructor(x, y, vx, vy) { 
+        this.x = x; this.y = y; 
+        this.vx = vx + (Math.random()-0.5)*30; 
+        this.vy = vy + (Math.random()-0.5)*30; 
+        this.phase = Math.random() * Math.PI * 2; 
+    }
+    update(dt) { 
+        this.x += this.vx * dt; this.y += this.vy * dt; this.phase += dt * 10; 
+        if (this.x < MARGIN-100 || this.x > WORLD_W-MARGIN+100 || this.y < MARGIN-100 || this.y > WORLD_H-MARGIN+100) { 
+            this.x = this.vx > 0 ? MARGIN-50 : WORLD_W-MARGIN+50; 
+            this.y = MARGIN + Math.random() * (WORLD_H - 2*MARGIN); 
+        } 
+    }
+    draw(ctx) { 
+        ctx.strokeStyle = 'rgba(255,255,255,0.8)'; 
+        ctx.lineWidth = 2; ctx.beginPath(); 
+        let wingY = Math.sin(this.phase) * 6; 
+        ctx.moveTo(this.x - 8, this.y - wingY); ctx.lineTo(this.x, this.y); ctx.lineTo(this.x + 8, this.y - wingY); 
+        ctx.stroke(); 
     }
 }
 class Cloud {
-    constructor() {
-        this.x = Math.random() * WORLD_W; this.y = Math.random() * WORLD_H;
-        this.scale = 0.5 + Math.random()*1.5; this.speed = 10 + Math.random()*15;
-    }
-    update(dt) {
-        this.x += this.speed * dt;
-        if (this.x > WORLD_W + 300) { this.x = -300; this.y = Math.random() * WORLD_H; }
-    }
-    draw(ctx) {
-        ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.beginPath();
-        ctx.arc(this.x, this.y, 40*this.scale, 0, Math.PI*2);
-        ctx.arc(this.x+35*this.scale, this.y-15*this.scale, 35*this.scale, 0, Math.PI*2);
-        ctx.arc(this.x-30*this.scale, this.y-10*this.scale, 30*this.scale, 0, Math.PI*2);
-        ctx.arc(this.x+20*this.scale, this.y+15*this.scale, 30*this.scale, 0, Math.PI*2);
-        ctx.fill();
-    }
+    constructor() { this.x = Math.random() * WORLD_W; this.y = Math.random() * WORLD_H; this.scale = 0.5 + Math.random()*1.5; this.speed = 10 + Math.random()*15; }
+    update(dt) { this.x += this.speed * dt; if (this.x > WORLD_W - MARGIN + 150) { this.x = MARGIN - 150; this.y = MARGIN + Math.random() * (WORLD_H - 2*MARGIN); } }
+    draw(ctx) { ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.beginPath(); ctx.arc(this.x, this.y, 40*this.scale, 0, Math.PI*2); ctx.arc(this.x+35*this.scale, this.y-15*this.scale, 35*this.scale, 0, Math.PI*2); ctx.arc(this.x-30*this.scale, this.y-10*this.scale, 30*this.scale, 0, Math.PI*2); ctx.arc(this.x+20*this.scale, this.y+15*this.scale, 30*this.scale, 0, Math.PI*2); ctx.fill(); }
 }
 class Leaf {
-    constructor() {
-        this.x = Math.random() * WORLD_W; this.y = Math.random() * WORLD_H;
-        this.speedX = 30 + Math.random()*40; this.speedY = (Math.random()-0.5)*20;
-        this.phase = Math.random() * Math.PI * 2;
-    }
-    update(dt) {
-        this.x += this.speedX * dt; this.phase += dt * 5;
-        this.y += (Math.sin(this.phase) * 10 + this.speedY) * dt;
-        if (this.x > WORLD_W + 50) { this.x = -50; this.y = Math.random() * WORLD_H; }
-    }
-    draw(ctx) {
-        ctx.fillStyle = 'rgba(120, 180, 80, 0.4)';
-        ctx.translate(this.x, this.y); ctx.rotate(this.phase);
-        ctx.beginPath(); ctx.ellipse(0, 0, 3, 1.5, 0, 0, Math.PI*2); ctx.fill();
-        ctx.rotate(-this.phase); ctx.translate(-this.x, -this.y);
-    }
+    constructor() { this.x = Math.random() * WORLD_W; this.y = Math.random() * WORLD_H; this.speedX = 30 + Math.random()*40; this.speedY = (Math.random()-0.5)*20; this.phase = Math.random() * Math.PI * 2; }
+    update(dt) { this.x += this.speedX * dt; this.phase += dt * 5; this.y += (Math.sin(this.phase) * 10 + this.speedY) * dt; if (this.x > WORLD_W - MARGIN + 50) { this.x = MARGIN - 50; this.y = MARGIN + Math.random() * (WORLD_H - 2*MARGIN); } }
+    draw(ctx) { ctx.fillStyle = 'rgba(120, 180, 80, 0.4)'; ctx.translate(this.x, this.y); ctx.rotate(this.phase); ctx.beginPath(); ctx.ellipse(0, 0, 3, 1.5, 0, 0, Math.PI*2); ctx.fill(); ctx.rotate(-this.phase); ctx.translate(-this.x, -this.y); }
 }
 class Fish {
-    constructor(x, y) {
-        this.pos = new Vector(x, y);
-        this.vel = new Vector(Math.random()-0.5, Math.random()-0.5).normalize().mult(15);
-        this.angle = Math.atan2(this.vel.y, this.vel.x);
-    }
+    constructor(x, y) { this.pos = new Vector(x, y); this.vel = new Vector(Math.random()-0.5, Math.random()-0.5).normalize().mult(15); this.angle = Math.atan2(this.vel.y, this.vel.x); }
     update(dt) {
-        let col = Math.floor(this.pos.x / HEX_W), row = Math.floor(this.pos.y / (HEX_H * 0.75));
-        let hexType = (grid[row] && grid[row][col]) ? grid[row][col].type : 'GRASS';
-        if (hexType !== 'WATER') {
-            this.vel.mult(-1); this.pos.add(this.vel.copy().mult(dt*2));
-        } else {
-            this.pos.add(this.vel.copy().mult(dt));
-            this.vel.x += (Math.random()-0.5)*15*dt; this.vel.y += (Math.random()-0.5)*15*dt;
-            this.vel.normalize().mult(15);
-        }
+        let col = Math.floor(this.pos.x / HEX_W), row = Math.floor(this.pos.y / (HEX_H * 0.75)); let hexType = (grid[row] && grid[row][col]) ? grid[row][col].type : 'GRASS';
+        if (hexType !== 'WATER') { this.vel.mult(-1); this.pos.add(this.vel.copy().mult(dt*2)); } 
+        else { this.pos.add(this.vel.copy().mult(dt)); this.vel.x += (Math.random()-0.5)*15*dt; this.vel.y += (Math.random()-0.5)*15*dt; this.vel.normalize().mult(15); }
         this.angle = Math.atan2(this.vel.y, this.vel.x);
     }
-    draw(ctx) {
-        ctx.fillStyle = 'rgba(200,200,255,0.4)';
-        ctx.translate(this.pos.x, this.pos.y); ctx.rotate(this.angle);
-        ctx.beginPath(); ctx.ellipse(0, 0, 4, 2, 0, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.moveTo(-3, 0); ctx.lineTo(-6, -2); ctx.lineTo(-6, 2); ctx.fill();
-        ctx.rotate(-this.angle); ctx.translate(-this.pos.x, -this.pos.y);
-    }
+    draw(ctx) { ctx.fillStyle = 'rgba(200,200,255,0.4)'; ctx.translate(this.pos.x, this.pos.y); ctx.rotate(this.angle); ctx.beginPath(); ctx.ellipse(0, 0, 4, 2, 0, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.moveTo(-3, 0); ctx.lineTo(-6, -2); ctx.lineTo(-6, 2); ctx.fill(); ctx.rotate(-this.angle); ctx.translate(-this.pos.x, -this.pos.y); }
 }
 
 class Base {
     constructor(team, x, y) {
         this.team = team; this.pos = new Vector(x, y);
         this.resources = 150; 
-        this.timers = { worker: 0, soldier: 0, queen: 0 };
-        this.maxTimers = { worker: 3, soldier: 6, queen: 25 };
+        this.maxTimers = { worker: 3, soldier: 6, queen: 60 };
+        this.timers = { worker: Math.random()*2, soldier: Math.random()*4, queen: Math.random()*10 };
     }
     update(dt) {
         for(let k in this.timers) if(this.timers[k] > 0) this.timers[k] -= dt;
@@ -256,36 +289,31 @@ class Base {
             let bestScore = -Infinity;
 
             resources.forEach(res => {
-                if (Vector.dist(res.pos, this.pos) > 300) {
+                let isValid = true;
+                bases.forEach(b => { if (Vector.dist(res.pos, b.pos) < 500) isValid = false; });
+                myQueens.forEach(mq => { if (mq.settleTarget && Vector.dist(res.pos, mq.settleTarget) < 500) isValid = false; });
+                
+                if (isValid) {
                     let allies = 0, enemies = 0;
-                    units.forEach(u => {
-                        if (u.state !== C.STATE.LARVA) {
-                            let d = Vector.dist(u.pos, res.pos);
-                            if (d < 350) {
-                                if (u.team === this.team) allies++;
-                                else enemies++;
-                            }
-                        }
+                    let nearby = getUnitsNear(res.pos, 300);
+                    nearby.forEach(u => {
+                        let d = Vector.dist(u.pos, res.pos);
+                        if (d < 300) { if (u.team === this.team) allies++; else enemies++; }
                     });
                     
-                    if (allies > 0) { 
-                        let score = 100 + (res.amount * 2) + (allies * 5) - (enemies * 20); 
-                        if (score > bestScore) {
-                            bestScore = score;
-                            bestTarget = res.pos.copy();
-                        }
-                    }
+                    let score = (res.amount * 5) + (allies * 1) - (enemies * 15); 
+                    if (score > bestScore) { bestScore = score; bestTarget = res.pos.copy(); }
                 }
             });
 
-            if (bestTarget && bestScore > -50) {
+            if (bestTarget && bestScore > -200) {
                 let rx = bestTarget.x + (Math.random()-0.5)*40;
                 let ry = bestTarget.y + (Math.random()-0.5)*40;
                 rx = Math.max(SAFE_BOUND, Math.min(WORLD_W - SAFE_BOUND, rx));
                 ry = Math.max(SAFE_BOUND, Math.min(WORLD_H - SAFE_BOUND, ry));
                 
                 let col = Math.floor(rx / HEX_W), row = Math.floor(ry / (HEX_H * 0.75));
-                if (grid[row] && grid[row][col] && grid[row][col].type !== 'WATER' && grid[row][col].type !== 'MOUNTAIN') {
+                if (grid[row] && grid[row][col] && grid[row][col].type === 'GRASS') {
                     q.settleTarget = new Vector(rx, ry);
                 } else {
                     q.settleTarget = bestTarget.copy(); 
@@ -295,7 +323,10 @@ class Base {
                     let rx = SAFE_BOUND + Math.random() * (WORLD_W - 2*SAFE_BOUND);
                     let ry = SAFE_BOUND + Math.random() * (WORLD_H - 2*SAFE_BOUND);
                     let col = Math.floor(rx / HEX_W), row = Math.floor(ry / (HEX_H * 0.75));
-                    if (grid[row] && grid[row][col] && grid[row][col].type === 'GRASS' && Vector.dist({x:rx,y:ry}, this.pos) > 400) {
+                    
+                    let tooClose = false;
+                    bases.forEach(b => { if (Vector.dist({x:rx,y:ry}, b.pos) < 400) tooClose = true; });
+                    if (!tooClose && grid[row] && grid[row][col] && grid[row][col].type === 'GRASS') {
                         q.settleTarget = new Vector(grid[row][col].x, grid[row][col].y);
                         break;
                     }
@@ -311,7 +342,7 @@ class Base {
             }
         }
 
-        if (this.resources >= C.STATS.ANT_SOLDIER.cost && this.timers.soldier <= 0 && Math.random() < 0.35) {
+        if (this.resources >= C.STATS.ANT_SOLDIER.cost && this.timers.soldier <= 0) {
             this.resources -= C.STATS.ANT_SOLDIER.cost;
             this.timers.soldier = this.maxTimers.soldier;
             units.push(new Unit(this.pos.x, this.pos.y, this.team, C.TYPES.SOLDIER));
@@ -369,8 +400,17 @@ class Unit {
         
         this.isBerserk = false; 
         this.isDefendingQueen = false;
+        this.isQueenGuard = Math.random() < 0.5; 
+        
         this.emojiTimer = 0;
         this.fleeTimer = 0;
+        this.thinkTimer = Math.random() * 0.2; 
+        this.lastCombatTimer = 0;
+    }
+
+    takeDamage(amt) {
+        this.hp -= amt;
+        this.lastCombatTimer = 5.0;
     }
 
     update(dt) {
@@ -382,6 +422,10 @@ class Unit {
         
         this.age += dt; this.emojiTimer -= dt;
         if(this.fleeTimer > 0) this.fleeTimer -= dt;
+        if(this.atkCooldown > 0) this.atkCooldown -= dt;
+        
+        if(this.lastCombatTimer > 0) this.lastCombatTimer -= dt;
+        else if(this.hp < this.maxHp) this.hp = Math.min(this.maxHp, this.hp + 3 * dt);
 
         if (this.state === C.STATE.LARVA) {
             let matureTime = this.type === C.TYPES.QUEEN ? C.QUEEN_MATURE_TIME : C.MATURE_TIME;
@@ -396,19 +440,36 @@ class Unit {
         this.energy -= dt;
         if(this.energy <= 0) { this.hp = 0; spawnParticle(this.pos.x, this.pos.y, '💀'); return; }
 
-        if(this.atkCooldown > 0) this.atkCooldown -= dt;
+        if(this.state === C.STATE.SETTLING) {
+            this.settleTimer -= dt; 
+            if(this.emojiTimer <= 0) { spawnParticle(this.pos.x, this.pos.y, '🔨'); this.emojiTimer = 1.5; }
+            if(this.settleTimer <= 0) {
+                this.hp = 0; bases.push(new Base(this.team, this.settleTarget.x, this.settleTarget.y));
+                return;
+            }
+        }
+
         this.legPhase += dt * 18;
 
-        this.think(dt);
+        this.thinkTimer -= dt;
+        if (this.thinkTimer <= 0) {
+            this.think(dt);
+            this.thinkTimer = 0.15 + Math.random() * 0.1; 
+        }
+
         this.move(dt);
     }
 
     think(dt) {
+        if (this.state === C.STATE.SETTLING) return;
+
         let nearestBase = getNearestBase(this.pos, this.team);
+        let nearbyUnits = getUnitsNear(this.pos, this.vision * 1.5);
+        let isLowHp = this.hp < (this.maxHp * 0.35);
 
         if (this.type === C.TYPES.QUEEN) {
             let enemyNear = null;
-            for(let u of units) {
+            for(let u of nearbyUnits) {
                 if(u.team !== this.team && u.hp > 0 && u.type === C.TYPES.SOLDIER && Vector.dist(u.pos, this.pos) < this.vision * 1.5) {
                     enemyNear = u; break;
                 }
@@ -421,25 +482,14 @@ class Unit {
                     this.target = this.pos.copy().add(new Vector(Math.cos(angle), Math.sin(angle)).mult(250));
                     
                     if (this.state === C.STATE.SETTLING) this.state = C.STATE.MOVE_TO_SETTLE; 
-                    this.isFleeing = true;
-                    this.fleeTimer = 2.0;
+                    this.isFleeing = true; this.fleeTimer = 2.0;
                 }
             } else {
                 if (this.isFleeing && this.fleeTimer <= 0) {
-                    this.isFleeing = false;
-                    this.target = this.settleTarget.copy(); 
+                    this.isFleeing = false; this.target = this.settleTarget.copy(); 
                 }
-                
                 if(this.state === C.STATE.MOVE_TO_SETTLE && !this.isFleeing) {
-                    if(this.target && Vector.dist(this.pos, this.target) < 15) {
-                        this.state = C.STATE.SETTLING; 
-                    }
-                } else if (this.state === C.STATE.SETTLING) {
-                    this.settleTimer -= dt; 
-                    if(this.emojiTimer <= 0) { spawnParticle(this.pos.x, this.pos.y, '🔨'); this.emojiTimer = 1.5; }
-                    if(this.settleTimer <= 0) {
-                        this.hp = 0; bases.push(new Base(this.team, this.settleTarget.x, this.settleTarget.y));
-                    }
+                    if(this.target && Vector.dist(this.pos, this.target) < 15) this.state = C.STATE.SETTLING; 
                 }
             }
             return; 
@@ -448,17 +498,16 @@ class Unit {
         let distToBase = nearestBase ? Vector.dist(this.pos, nearestBase.pos) : 0;
         let timeToBase = distToBase / (this.baseSpeed * 0.7); 
         let energyNeeded = timeToBase + 10; 
-        let shouldReturn = (this.energy < energyNeeded || this.hp < this.maxHp * 0.35);
+        let shouldReturn = (this.energy < energyNeeded || isLowHp);
 
         let nearestEnemyWorker = null, minDistWorker = this.vision;
         let nearestEnemySoldier = null, minDistSoldier = this.vision;
         let enemyQueen = null, alliedQueen = null;
         let nearestEnemyBase = null, minBaseDist = this.vision;
 
-        for(let u of units) {
+        for(let u of nearbyUnits) {
             if(u.hp > 0 && u.state !== C.STATE.LARVA) {
                 let d = Vector.dist(this.pos, u.pos);
-                
                 if(u.team !== this.team) {
                     if (u.type === C.TYPES.QUEEN && d < this.vision * 1.5) enemyQueen = u;
                     else if (u.type === C.TYPES.SOLDIER && d < minDistSoldier) { minDistSoldier = d; nearestEnemySoldier = u; }
@@ -484,8 +533,8 @@ class Unit {
             let enemySoldierNearQueen = null;
             let enemyWorkerNearQueen = null;
 
-            if (alliedQueen) {
-                for(let u of units) {
+            if (alliedQueen && this.isQueenGuard) {
+                for(let u of nearbyUnits) {
                     if(u.hp > 0 && u.team !== this.team && u.state !== C.STATE.LARVA) {
                         let dQ = Vector.dist(u.pos, alliedQueen.pos);
                         if (dQ < 250) { 
@@ -503,28 +552,30 @@ class Unit {
             let enemyQueenInSight = enemyQueen && Vector.dist(this.pos, enemyQueen.pos) <= this.vision;
             let berserkConditionMet = alliedQueenInSight || enemyQueenInSight;
 
-            if (alliedQueen && enemySoldierNearQueen) { priorityTarget = enemySoldierNearQueen; intent = C.STATE.ENGAGE; }
-            else if (alliedQueen && enemyWorkerNearQueen) { priorityTarget = enemyWorkerNearQueen; intent = C.STATE.ENGAGE; }
+            if (alliedQueen && this.isQueenGuard && enemySoldierNearQueen) { priorityTarget = enemySoldierNearQueen; intent = C.STATE.ENGAGE; }
+            else if (alliedQueen && this.isQueenGuard && enemyWorkerNearQueen) { priorityTarget = enemyWorkerNearQueen; intent = C.STATE.ENGAGE; }
             else if (enemyQueen) { priorityTarget = enemyQueen; intent = C.STATE.ENGAGE; }
             else if (nearestEnemySoldier) { priorityTarget = nearestEnemySoldier; intent = C.STATE.ENGAGE; }
             else if (nearestEnemyBase) { priorityTarget = nearestEnemyBase; intent = C.STATE.ENGAGE; }
             else if (nearestEnemyWorker) { priorityTarget = nearestEnemyWorker; intent = C.STATE.ENGAGE; }
-            else if (alliedQueen) { priorityTarget = alliedQueen; this.isDefendingQueen = true; intent = C.STATE.WANDER; }
+            else if (alliedQueen && this.isQueenGuard) { priorityTarget = alliedQueen; this.isDefendingQueen = true; intent = C.STATE.WANDER; }
             else { intent = C.STATE.WANDER; }
 
-            if (intent === C.STATE.ENGAGE && berserkConditionMet) {
-                this.isBerserk = true;
+            if (intent === C.STATE.ENGAGE && berserkConditionMet) this.isBerserk = true;
+
+            if (intent === C.STATE.ENGAGE && isLowHp && !berserkConditionMet) {
+                intent = C.STATE.FLEE;
+                priorityTarget = nearestEnemySoldier || nearestEnemyWorker || enemyQueen;
             }
 
-            if (shouldReturn && !this.isBerserk) {
+            if (shouldReturn && !this.isBerserk && intent !== C.STATE.FLEE) {
                 if (nearestBase) {
-                    this.state = C.STATE.RETURN_BASE;
-                    this.target = nearestBase;
+                    this.state = C.STATE.RETURN_BASE; this.target = nearestBase;
                     if (Vector.dist(this.pos, nearestBase.pos) < 35) {
-                        if (nearestBase.resources >= 1) { 
-                            nearestBase.resources -= 1; this.energy = C.MAX_ENERGY; this.hp = this.maxHp;
+                        if (nearestBase.resources >= 2) { 
+                            nearestBase.resources -= 2; this.energy = C.MAX_ENERGY; this.hp = this.maxHp;
                             this.state = C.STATE.WANDER;
-                        } else this.vel.mult(0.5); 
+                        } else this.vel.mult(0.5);
                     }
                     return;
                 }
@@ -537,14 +588,23 @@ class Unit {
                 if (Vector.dist(this.pos, priorityTarget.pos || priorityTarget) < attackThreshold) {
                     this.state = C.STATE.ATTACK;
                     if(this.atkCooldown <= 0) {
-                        if (priorityTarget instanceof Base) priorityTarget.resources -= 5;
-                        else priorityTarget.hp -= this.dmg;
-                        
+                        if (priorityTarget instanceof Base) {
+                            let dmg = 5 + (priorityTarget.resources * 0.05);
+                            priorityTarget.resources -= dmg;
+                        } else {
+                            priorityTarget.takeDamage(this.dmg);
+                        }
                         this.atkCooldown = 0.5;
                         if(Math.random() < 0.25) spawnParticle(priorityTarget.pos.x, priorityTarget.pos.y, '💥');
                     }
                 } else {
                     this.state = C.STATE.ENGAGE; this.target = priorityTarget.pos || priorityTarget;
+                }
+            } else if (intent === C.STATE.FLEE) {
+                this.state = C.STATE.FLEE;
+                if(priorityTarget) {
+                    let fleeVec = this.pos.copy().sub(priorityTarget.pos || priorityTarget).normalize();
+                    this.target = this.pos.copy().add(fleeVec.mult(100));
                 }
             } else if (intent === C.STATE.WANDER) {
                 this.state = C.STATE.WANDER;
@@ -571,16 +631,19 @@ class Unit {
                 if (!nearestBase) { this.state = C.STATE.WANDER; return; }
                 this.target = nearestBase;
                 if(Vector.dist(this.pos, nearestBase.pos) < 35) {
-                    if (nearestBase.resources >= 1) {
-                        nearestBase.resources -= 1; this.energy = C.MAX_ENERGY; this.hp = this.maxHp;
-                        this.state = this.payload > 0 ? C.STATE.RETURN_RES : C.STATE.WANDER;
+                    if (this.payload > 0) {
+                        nearestBase.resources += this.payload; this.payload = 0;
+                    }
+                    if (nearestBase.resources >= 2) {
+                        nearestBase.resources -= 2; this.energy = C.MAX_ENERGY; this.hp = this.maxHp;
+                        this.state = C.STATE.WANDER;
                     } else this.vel.mult(0.5);
                 }
                 return;
             }
 
             let nearestEnemy = null, minDist = this.vision;
-            for(let u of units) {
+            for(let u of nearbyUnits) {
                 if(u.hp > 0 && u.state !== C.STATE.LARVA && u.team !== this.team) {
                     let d = Vector.dist(this.pos, u.pos);
                     if (d < minDist) { minDist = d; nearestEnemy = u; }
@@ -636,7 +699,7 @@ class Unit {
 
         if (hexType === 'WATER' || hexType === 'MOUNTAIN') speedMult = 0.35; 
         
-        let woundMult = (this.hp < this.maxHp * 0.5) ? 0.6 : 1.0;
+        let woundMult = (this.hp < this.maxHp * 0.5) ? 0.65 : 1.0;
         let actualSpeed = this.baseSpeed * speedMult * woundMult;
 
         if(this.state === C.STATE.WANDER) {
@@ -655,9 +718,25 @@ class Unit {
             let center = this.exploreTarget.copy().sub(this.pos).normalize().mult(50).add(this.pos);
             let offset = new Vector(Math.cos(this.wanderAngle), Math.sin(this.wanderAngle)).mult(30);
             desired = center.add(offset).sub(this.pos).normalize().mult(actualSpeed);
+
+            let sep = new Vector(0,0);
+            let nearby = getUnitsNear(this.pos, 60);
+            for(let o of nearby) {
+                if (o !== this && o.team === this.team && o.state === C.STATE.WANDER) {
+                    let dist = Vector.dist(this.pos, o.pos);
+                    if (dist > 0 && dist < 60) sep.add(this.pos.copy().sub(o.pos).normalize().mult(40/dist));
+                }
+            }
+            if (sep.mag() > 0) desired.add(sep.mult(0.6));
+            
         } else if (this.target) {
             let targetPos = this.target.pos || this.target;
-            desired = targetPos.copy().sub(this.pos).normalize().mult(actualSpeed);
+            let dist = Vector.dist(this.pos, targetPos);
+            if (dist < 5 && this.state !== C.STATE.FLEE && this.state !== C.STATE.ENGAGE) {
+                desired = new Vector(0,0); 
+            } else {
+                desired = targetPos.copy().sub(this.pos).normalize().mult(actualSpeed);
+            }
         }
 
         if(this.pos.x < MARGIN) desired.x = actualSpeed; 
@@ -744,7 +823,10 @@ class Unit {
         ctx.fillStyle = '#444'; ctx.fillRect(rX - barW/2, barY + 3, barW, 2);
         ctx.fillStyle = '#ffcc00'; ctx.fillRect(rX - barW/2, barY + 3, barW * (this.energy/C.MAX_ENERGY), 2); 
 
-        if(this.payload > 0) { ctx.fillStyle = '#ff3333'; ctx.beginPath(); ctx.arc(rX, rY - 12, 3, 0, Math.PI*2); ctx.fill(); }
+        if(this.payload > 0) { 
+            ctx.font = '10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('🍎', rX, rY - 14); 
+        }
     }
 }
 
@@ -772,9 +854,10 @@ function drawVoxelHex(ctx, x, y, size, elevation, topColor, sideColor) {
 }
 
 function drawEmojiTree(ctx, x, y, amount) {
+    ctx.globalAlpha = 1.0; 
+    ctx.fillStyle = '#ffffff'; 
     let numApples = Math.min(Math.floor(amount / 5), 8);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    
     ctx.font = '12px sans-serif';
     for(let i=0; i<numApples; i++) {
         let angle = (i * Math.PI * 2) / numApples;
@@ -784,18 +867,46 @@ function drawEmojiTree(ctx, x, y, amount) {
     ctx.font = '34px sans-serif'; ctx.fillText('🌳', x, y - 8);
 }
 
+function spawnResource() {
+    let attempts = 0, valid = false;
+    while(!valid && attempts < 100) {
+        attempts++;
+        let cx = WORLD_W / 2;
+        let rx = cx + (Math.random() - 0.5) * (Math.random() * WORLD_W * 0.7); 
+        rx = Math.max(SAFE_BOUND, Math.min(WORLD_W - SAFE_BOUND, rx));
+        let ry = SAFE_BOUND + Math.random() * (WORLD_H - 2*SAFE_BOUND);
+        
+        let col = Math.floor(rx / HEX_W), row = Math.floor(ry / (HEX_H * 0.75));
+        if (grid[row] && grid[row][col] && grid[row][col].type === 'GRASS') {
+            resources.push({ pos: new Vector(grid[row][col].x, grid[row][col].y), amount: 40+Math.random()*20, elev: grid[row][col].elev });
+            valid = true;
+        }
+    }
+}
+
 function initGame() {
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
     mapCanvas.width = WORLD_W; mapCanvas.height = WORLD_H;
     fogCanvas.width = WORLD_W; fogCanvas.height = WORLD_H;
     fogCtx.fillStyle = '#030508'; fogCtx.fillRect(0, 0, WORLD_W, WORLD_H);
+    
+    document.getElementById('victory-toast').style.display = 'none';
+    gameOver = false;
 
     units = []; resources = []; bases = []; particles = []; grid = [];
     clouds = []; leaves = []; fishes = []; birds = [];
     
     for(let i=0; i<25; i++) clouds.push(new Cloud());
     for(let i=0; i<40; i++) leaves.push(new Leaf());
-    for(let i=0; i<15; i++) birds.push(new Bird());
+    
+    for(let i=0; i<8; i++) {
+        let fx = MARGIN + Math.random() * (WORLD_W - 2*MARGIN);
+        let fy = MARGIN + Math.random() * (WORLD_H - 2*MARGIN);
+        let fvx = (Math.random() < 0.5 ? 1 : -1) * (150 + Math.random()*100);
+        let fvy = (Math.random() - 0.5) * 60;
+        let flockSize = 3 + Math.floor(Math.random() * 4);
+        for(let j=0; j<flockSize; j++) birds.push(new Bird(fx + (Math.random()-0.5)*60, fy + (Math.random()-0.5)*60, fvx, fvy));
+    }
 
     let mountCenters = [];
     let numClusters = Math.floor(WORLD_W / 300);
@@ -821,7 +932,6 @@ function initGame() {
                 }
                 if (isMount) { type = 'MOUNTAIN'; elev = 18 + Math.random()*15; cTop = '#686b66'; cSide = '#353633'; }
             }
-            
             grid[r][q] = { x, y, type, elev, cTop, cSide };
         }
     }
@@ -858,27 +968,25 @@ function initGame() {
 
     for(let i=0; i<targetResourceCount; i++) spawnResource();
 
-    bases.push(new Base(C.TEAMS.ANT, SAFE_BOUND + 50, WORLD_H/2));
-    bases.push(new Base(C.TEAMS.BEE, WORLD_W - SAFE_BOUND - 50, WORLD_H/2));
+    function findValidBaseLoc(isAnt) {
+        for(let i=0; i<500; i++) {
+            let rx = isAnt ? (SAFE_BOUND + Math.random() * (WORLD_W*0.25)) : (WORLD_W*0.75 + Math.random() * (WORLD_W*0.25 - SAFE_BOUND));
+            let ry = SAFE_BOUND + Math.random() * (WORLD_H - 2*SAFE_BOUND);
+            let col = Math.floor(rx / HEX_W), row = Math.floor(ry / (HEX_H * 0.75));
+            if(grid[row] && grid[row][col] && grid[row][col].type === 'GRASS') return new Vector(grid[row][col].x, grid[row][col].y);
+        }
+        return new Vector(isAnt ? SAFE_BOUND+50 : WORLD_W-SAFE_BOUND-50, WORLD_H/2);
+    }
+    
+    let antBaseLoc = findValidBaseLoc(true);
+    let beeBaseLoc = findValidBaseLoc(false);
+    
+    bases.push(new Base(C.TEAMS.ANT, antBaseLoc.x, antBaseLoc.y));
+    bases.push(new Base(C.TEAMS.BEE, beeBaseLoc.x, beeBaseLoc.y));
 
     for(let i=0; i<10; i++) {
         units.push(new Unit(bases[0].pos.x, bases[0].pos.y, C.TEAMS.ANT, C.TYPES.WORKER));
         units.push(new Unit(bases[1].pos.x, bases[1].pos.y, C.TEAMS.BEE, C.TYPES.WORKER));
-    }
-}
-
-function spawnResource() {
-    let attempts = 0, valid = false;
-    while(!valid && attempts < 100) {
-        attempts++;
-        let rx = SAFE_BOUND + Math.random() * (WORLD_W - 2*SAFE_BOUND);
-        let ry = SAFE_BOUND + Math.random() * (WORLD_H - 2*SAFE_BOUND);
-        
-        let col = Math.floor(rx / HEX_W), row = Math.floor(ry / (HEX_H * 0.75));
-        if (grid[row] && grid[row][col] && grid[row][col].type === 'GRASS') {
-            resources.push({ pos: new Vector(grid[row][col].x, grid[row][col].y), amount: 40+Math.random()*20, elev: grid[row][col].elev });
-            valid = true;
-        }
     }
 }
 
@@ -895,8 +1003,8 @@ function updateHUD() {
     let bFood = bases.filter(b=>b.team===C.TEAMS.BEE).reduce((sum, b)=>sum+b.resources, 0);
     
     document.getElementById('stats').innerHTML = `
-        <div class="stat-team"><strong style="color:#f02424">Ants (${bases.filter(b=>b.team===0).length} Bases)</strong><br>W: ${aW} | S: ${aS}<br>Food: ${Math.floor(aFood)}</div>
-        <div class="stat-team"><strong style="color:#f5d142">Bees (${bases.filter(b=>b.team===1).length} Bases)</strong><br>W: ${bW} | S: ${bS}<br>Food: ${Math.floor(bFood)}</div>
+        <div class="stat-team"><strong style="color:#f02424">Ants (${bases.filter(b=>b.team===0).length} Bases)</strong><br>Workers: ${aW} | Soldiers: ${aS}<br>Food: ${Math.floor(aFood)}</div>
+        <div class="stat-team"><strong style="color:#f5d142">Bees (${bases.filter(b=>b.team===1).length} Bases)</strong><br>Workers: ${bW} | Soldiers: ${bS}<br>Food: ${Math.floor(bFood)}</div>
     `;
 }
 
@@ -910,6 +1018,16 @@ function loop(timestamp) {
     let showPath = { 0: document.getElementById('path-0').checked, 1: document.getElementById('path-1').checked, 2: document.getElementById('path-2').checked };
 
     if(speedMult > 0) {
+        
+        spatialGrid = {};
+        units.forEach(u => {
+            if (u.state !== C.STATE.LARVA) {
+                let key = Math.floor(u.pos.x / CELL_SIZE) + ',' + Math.floor(u.pos.y / CELL_SIZE);
+                if(!spatialGrid[key]) spatialGrid[key] = [];
+                spatialGrid[key].push(u);
+            }
+        });
+
         bases.forEach(b => b.update(simDt));
         bases = bases.filter(b => b.resources >= 0); 
         
@@ -925,10 +1043,8 @@ function loop(timestamp) {
             if(particles[i].life <= 0) particles.splice(i, 1);
         }
 
-        fishes.forEach(f => f.update(simDt));
-        clouds.forEach(c => c.update(simDt));
-        leaves.forEach(l => l.update(simDt));
-        birds.forEach(b => b.update(simDt));
+        fishes.forEach(f => f.update(simDt)); clouds.forEach(c => c.update(simDt));
+        leaves.forEach(l => l.update(simDt)); birds.forEach(b => b.update(simDt));
 
         fogCtx.globalCompositeOperation = 'source-over';
         fogCtx.fillStyle = `rgba(3, 5, 8, ${Math.min(1.0, 0.005 * speedMult)})`; 
@@ -937,28 +1053,39 @@ function loop(timestamp) {
         fogCtx.globalCompositeOperation = 'destination-out';
         units.forEach(u => {
             if (fowView !== 'both' && u.team !== parseInt(fowView)) return;
-            fogCtx.beginPath();
-            let rad = fogCtx.createRadialGradient(u.pos.x, u.pos.y, 0, u.pos.x, u.pos.y, u.vision);
-            rad.addColorStop(0, 'rgba(0,0,0,1)'); rad.addColorStop(1, 'rgba(0,0,0,0)');
-            fogCtx.fillStyle = rad; fogCtx.arc(u.pos.x, u.pos.y, u.vision, 0, Math.PI*2); fogCtx.fill();
+            fogCtx.drawImage(lightMask, u.pos.x - u.vision, u.pos.y - u.vision, u.vision * 2, u.vision * 2);
         });
         bases.forEach(b => {
             if (fowView !== 'both' && b.team !== parseInt(fowView)) return;
-            fogCtx.beginPath();
-            let rad = fogCtx.createRadialGradient(b.pos.x, b.pos.y, 0, b.pos.x, b.pos.y, 250);
-            rad.addColorStop(0, 'rgba(0,0,0,1)'); rad.addColorStop(1, 'rgba(0,0,0,0)');
-            fogCtx.fillStyle = rad; fogCtx.arc(b.pos.x, b.pos.y, 250, 0, Math.PI*2); fogCtx.fill();
+            fogCtx.drawImage(lightMask, b.pos.x - 250, b.pos.y - 250, 500, 500);
         });
+
+        if (!gameOver && speedMult > 0 && bases.length > 0) {
+            let antAlive = bases.some(b=>b.team===0) || units.some(u=>u.team===0 && u.type===C.TYPES.QUEEN);
+            let beeAlive = bases.some(b=>b.team===1) || units.some(u=>u.team===1 && u.type===C.TYPES.QUEEN);
+            if(antAlive && !beeAlive) {
+                document.getElementById('victory-msg').innerHTML = "👑 Ants Win!";
+                document.getElementById('victory-toast').style.display = 'block';
+                gameOver = true;
+            } else if(beeAlive && !antAlive) {
+                document.getElementById('victory-msg').innerHTML = "👑 Bees Win!";
+                document.getElementById('victory-toast').style.display = 'block';
+                gameOver = true;
+            }
+        }
     }
 
     ctx.fillStyle = '#020304'; ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     ctx.save();
-    ctx.translate(canvas.width/2, canvas.height/2);
-    ctx.scale(cam.z, cam.z);
-    ctx.translate(-cam.x, -cam.y);
-
+    ctx.translate(canvas.width/2, canvas.height/2); ctx.scale(cam.z, cam.z); ctx.translate(-cam.x, -cam.y);
     ctx.drawImage(mapCanvas, 0, 0);
+
+    // Strict Clipping Mask: Prevent dynamic entities from drawing outside the world borders
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(MARGIN, MARGIN, WORLD_W - 2*MARGIN, WORLD_H - 2*MARGIN);
+    ctx.clip();
     
     units.forEach(u => {
         if (u.type === C.TYPES.QUEEN && u.settleTarget && u.state !== C.STATE.LARVA) {
@@ -998,19 +1125,16 @@ function loop(timestamp) {
         }
     });
 
-    leaves.forEach(l => l.draw(ctx));
-    birds.forEach(b => b.draw(ctx)); 
-    clouds.forEach(c => c.draw(ctx)); 
+    leaves.forEach(l => l.draw(ctx)); birds.forEach(b => b.draw(ctx)); clouds.forEach(c => c.draw(ctx)); 
     
     ctx.textAlign = 'center'; ctx.font = '20px sans-serif';
-    particles.forEach(p => {
-        ctx.globalAlpha = Math.min(1.0, p.life);
-        ctx.fillText(p.text, p.x, p.y);
-    });
+    particles.forEach(p => { ctx.globalAlpha = Math.min(1.0, p.life); ctx.fillText(p.text, p.x, p.y); });
     ctx.globalAlpha = 1.0;
 
     ctx.drawImage(fogCanvas, 0, 0);
-    ctx.restore();
+    
+    ctx.restore(); // Remove Clip Mask
+    ctx.restore(); // Remove Camera Transform
 
     updateHUD();
     requestAnimationFrame(loop);
