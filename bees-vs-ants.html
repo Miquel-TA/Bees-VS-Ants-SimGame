@@ -85,8 +85,8 @@
                 <label><input type="checkbox" id="vis-0"> 👷 Workers</label>
                 <label><input type="checkbox" id="vis-1"> ⚔️ Soldiers</label>
                 <label><input type="checkbox" id="vis-2"> 👑 Queens</label>
-                <label><input type="checkbox" id="vis-3"> 🩹 Healers</label>
-                <label><input type="checkbox" id="vis-4"> 📢 Supporters</label>
+                <label><input type="checkbox" id="vis-3"> <span style="color:#0f0; font-weight:bold;">✚</span> Healers</label>
+                <label><input type="checkbox" id="vis-4"> 🔺 Supporters</label>
             </div>
         </div>
         
@@ -96,8 +96,8 @@
                 <label><input type="checkbox" id="path-0"> 👷 Workers</label>
                 <label><input type="checkbox" id="path-1"> ⚔️ Soldiers</label>
                 <label><input type="checkbox" id="path-2"> 👑 Queens</label>
-                <label><input type="checkbox" id="path-3"> 🩹 Healers</label>
-                <label><input type="checkbox" id="path-4"> 📢 Supporters</label>
+                <label><input type="checkbox" id="path-3"> <span style="color:#0f0; font-weight:bold;">✚</span> Healers</label>
+                <label><input type="checkbox" id="path-4"> 🔺 Supporters</label>
             </div>
         </div>
 
@@ -609,7 +609,7 @@ class Unit {
             for (let u of nearbyUnits) {
                 if (u.team === this.team && u.hp > 0 && u.state !== C.STATE.LARVA && Vector.dist(this.pos, u.pos) <= this.vision) {
                     if (this.type === C.TYPES.HEALER) alliesToBuff.push(u);
-                    else if (this.type === C.TYPES.SUPPORTER && u.type === C.TYPES.SOLDIER) alliesToBuff.push(u);
+                    else if (this.type === C.TYPES.SUPPORTER) alliesToBuff.push(u);
                 }
             }
 
@@ -987,16 +987,21 @@ class Unit {
         else if (this.type === C.TYPES.HEALER) {
             if (this.state === C.STATE.FLEE) icon = '💨';
             else if (this.state === C.STATE.RETURN_BASE) icon = '🏠';
-            else icon = '🩹';
+            else icon = '✚';
         }
         else if (this.type === C.TYPES.SUPPORTER) {
             if (this.state === C.STATE.FLEE) icon = '💨';
             else if (this.state === C.STATE.RETURN_BASE) icon = '🏠';
-            else icon = '⬆️';
+            else icon = '🔺';
         }
         
         if (icon) {
             ctx.font = '10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            if (icon === '✚') {
+                ctx.fillStyle = '#0f0';
+            } else {
+                ctx.fillStyle = '#fff'; 
+            }
             ctx.fillText(icon, rX, rY - 20);
         }
 
